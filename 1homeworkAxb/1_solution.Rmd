@@ -1,0 +1,354 @@
+---
+title: "Homework 1"
+subtitle: 'STAT6306; Due: 09/05/2017'
+output: pdf_document
+---
+
+# Problem 0
+R is a standard software interface for computing and graphics and Rstudio is an integrated
+development environment (IDE) for R.  Install both on your computer.
+
+* R: \textcolor{blue}{\url{http://lib.stat.cmu.edu/R/CRAN/}}
+* Rstudio: \textcolor{blue}{\url{https://www.rstudio.com/products/rstudio/\#Desktop}}
+
+# Problem 1
+
+
+Suppose we have the following matrix:
+
+```{r}
+set.seed(1)
+A = matrix(rnorm(4*3),nrow=4,ncol=3)
+```
+We want to get the column mean for each column of the matrix $A$.  Do this using each of the following techniques:
+
+### Part a
+Hard coding  (that is, write $(A[1,1]+ A[2,1] + ...)/4, ...$  )
+
+```{r}
+#SOLUTION
+c((A[1,1]+A[2,1]+A[3,1]+A[4,1])/4, (A[1,2]+A[2,2]+A[3,2]+A[4,2])/4, (A[1,3]+A[2,3]+A[3,3]+A[4,3])/4)
+```
+
+### Part b
+For loop(s)
+```{r}
+#SOLUTION
+col_mean = rep(0,ncol(A))
+for(j in 1:ncol(A)){
+  col_mean[j] = mean(A[,j])
+}
+col_mean
+```
+
+### Part c
+The apply (or related) function 
+```{r}
+#SOLUTION
+apply_mean = apply(A, 2, mean)
+apply_mean
+```
+
+# Problem 2
+
+Many statistical methods can be computed/analyzed using the SVD\footnote{For this question,
+	I'm using common linear algebra notation of $A$, $x$, and $b$. This $x$ is not to be confused with a feature}. 
+	Let's look at solving least squares problems as they are fundamental to modern data analysis.
+
+### Part a
+
+```{r}
+set.seed(10)
+A = matrix(rnorm(24),nrow=6,ncol=4)
+A[,1] = 1
+```
+
+Write $A = UDV^{\top}$ (that is, form svd.out = svd(A)).  
+			
+Suppose we wish to solve for $\hat{x} = arg\min_x ||Ax - b||_2^2 = (A^{\top}A)^{-1}A^{\top}b$ for $b = (1,2,3,4,5,6)^{\top}$.   As an aside, to show this, note that\footnote{$\nabla_x$ indicates gradient with respect to $x$}
+		\begin{align}
+		||Ax - b||_2^2 & = x^{\top}A^{\top}Ax + b^{\top}b -2x^{\top}A^{\top}b \\
+		&  \Rightarrow \nabla_x  = 2A^{\top}A\hat{x} - 2 A^{\top}b \stackrel{\textrm{set}}{=} 0 \\
+		& \Rightarrow \hat{x} = (A^{\top}A)^{-1} A^{\top}b
+		\end{align}
+
+		How can I solve this using the SVD?  Here, let's follow the steps:
+		\begin{enumerate}
+			\item Form $U^{\top} b$
+			\item Solve $Dw = U^{\top} b$
+			\item Form $\hat{x} = Vw$
+		\end{enumerate}
+		Produce this $\hat{x}$ in R via this method.  Note that in this particular case, all the singular values in $D$
+		are nonzero and hence $\hat{x} = VD^{-1}U^{\top}b$.
+
+```{r}
+#SOLUTION
+svd.out = svd(A)
+b = 1:6
+Ut_b = t(svd.out$u)%*%b
+w = solve(diag(svd.out$d), Ut_b)
+x_hat = svd.out$v%*%w
+x_hat
+```
+
+### Part b
+Suppose instead we have observations under the model $Y = \mathbb{X}\beta +\epsilon$, where $Y = b$ 
+	and $\mathbb{X} = A$.  Using the R function lm and predict, what is the least squares solution $\hat\beta$ and the fitted values $\hat{Y}$ for $Y$ using the least squares solution?\footnote{Remember to not have R add an intercept as there is already a column of ones}  
+	
+How does the produced coefficient vector $\hat{\beta}$ compare the $\hat{x}$?
+```{r}
+#SOLUTION
+lm_out = lm(b~A-1)
+beta_hat = lm_out$coefficients
+beta_hat
+
+Y_hat = predict(lm_out)
+Y_hat
+```
+SOLUTION 
+They are the same solution
+
+# Problem 3
+Now, let's look at a new $A$
+```{r}
+set.seed(100)
+A = matrix(rnorm(4*3),ncol=4,nrow=3)
+A[,1] = 1
+```
+and $b = (1,2,3)^{\top}$. This is an example of an \emph{underdetermined} system.  
+	
+	
+	
+### Part a
+What do(es) the corresponding $\hat{x}$ look like using the SVD? What do(es) the $\hat\beta$ look like using lm?
+
+```{r}
+#SOLUTION
+svd.out = svd(A)
+b = 1:3
+Ut_b = t(svd.out$u)%*%b
+w = solve(diag(svd.out$d), Ut_b)
+x_hat = svd.out$v%*%w
+x_hat
+
+lm_out = lm(b~A-1)
+beta_hat = lm_out$coefficients
+beta_hat
+```
+
+### Part b
+What do(es) the corresponding $A\hat{x}$ look like using the SVD? What do(es) the $\hat{Y} = \mathbb{X}\hat\beta$ look like using predict?
+```{r}
+#SOLUTION
+A%*%x_hat
+predict(lm_out)
+```
+NOTE: it is worth considering why the two objects have different formatting.
+
+
+### Part c
+Though this  is just one simulated example and not a proof, your findings generalize to all situations when $p > n$. Summarize in words what these findings are.
+
+SOLUTION: When p > n the model is overfit and therefore the response values can be predicted exactly. However, this is not good practice because the model will have high variance and have poor predictions for new responses.
+
+
+# Problem 4
+
+```{r}
+set.seed(1)
+n = 2000
+p = 500
+X = matrix(rnorm(n*p),nrow=n,ncol=p)
+X[,1] = 1
+format(object.size(X),units='auto')#memory used by X
+
+b = rep(0,p)
+b[1:5] = 25
+b_0 = 0
+Xdf = data.frame(X)
+Y = b_0 + X %*% b + rnorm(n)
+hatBeta = coef(lm(Y~X-1)) #Here, the [-1] ignores the intercept
+
+#Using out-of-core technique
+write.table(X[1:500,],file='Xchunk1.txt',sep=',',row.names=F,col.names=names(Xdf))
+write.table(X[501:1000,],file='Xchunk2.txt',sep=',',row.names=F,col.names=names(Xdf))
+write.table(X[1001:1500,],file='Xchunk3.txt',sep=',',row.names=F,col.names=names(Xdf))
+write.table(X[1501:2000,],file='Xchunk4.txt',sep=',',row.names=F,col.names=names(Xdf))
+write.table(Y[1:500],file='Ychunk1.txt',sep=',',row.names=F,col.names=F)
+write.table(Y[501:1000],file='Ychunk2.txt',sep=',',row.names=F,col.names=F)
+write.table(Y[1001:1500],file='Ychunk3.txt',sep=',',row.names=F,col.names=F)
+write.table(Y[1501:2000],file='Ychunk4.txt',sep=',',row.names=F,col.names=F)
+```
+### Part a
+Report the first 5 entries in $\hat\beta$ (that is, hatBeta in the above code) using lm on all the data simultaneously
+
+```{r}
+#SOLUTION
+print(hatBeta[1:5])
+```
+
+### Part b
+Alternatively, we can read in each chunk and update the solution using biglm. Here is the first part. Complete the procedure in the natural way on the remaining chunks. Compare the first 5 entries in $\hat\beta$ formed by this method with the entries in (a)
+```{r}
+if(!require(biglm,quietly=TRUE)){
+  install.packages('biglm',repos='http://cran.us.r-project.org');require(biglm)
+}
+
+# Chunk 1
+Xchunk = read.table(file='Xchunk1.txt',sep=',',header=T)
+Ychunk = scan(file='Ychunk1.txt',sep=',')
+form = as.formula(paste('Ychunk ~ -1 + ',paste(names(Xchunk),collapse=' + '),collapse=''))
+out.biglm = biglm(formula = form,data=Xchunk)
+hatBeta[1:5]
+coef(out.biglm)[1:5]
+
+# Chunk 2
+Xchunk = read.table(file='Xchunk2.txt',sep=',',header=T)
+Ychunk = scan(file='Ychunk2.txt',sep=',')
+out.biglm = update(out.biglm,moredata=Xchunk)
+hatBeta[1:5]
+coef(out.biglm)[1:5]
+
+# Chunk 3
+Xchunk = read.table(file='Xchunk3.txt',sep=',',header=T)
+Ychunk = scan(file='Ychunk3.txt',sep=',')
+out.biglm = update(out.biglm,moredata=Xchunk)
+hatBeta[1:5]
+coef(out.biglm)[1:5]
+
+## Can you figure out the final steps? Have we updated on all of the chunks?
+
+#Solution
+# Chunk 4
+Xchunk = read.table(file='Xchunk4.txt',sep=',',header=T)
+Ychunk = scan(file='Ychunk4.txt',sep=',')
+out.biglm = update(out.biglm,moredata=Xchunk)
+
+print(hatBeta[1:5])
+print(coef(out.biglm)[1:5])
+# Yes all chunks updated because we see the two solutions match
+```
+
+
+# Problem 5
+Forward selection.
+
+### Part a
+
+Using the $\mathbb{X}$ and $Y$ generated in the previous problem, use forward selection and AIC to estimate $b$.
+ 
+```{r}
+if(!require(leaps)){install.packages('leaps',repos='http://cran.us.r-project.org');require(leaps)}
+outFor     = regsubsets(x=X,y=Y,nvmax=p,method='forward',intercept=FALSE)
+sumFor     = summary(outFor)
+modelFor   = sumFor$which[which.min(sumFor$cp),]
+leapsModel = as.numeric(which(modelFor))
+
+```
+
+
+### Part b (optional)
+Save the $\mathbb{X}$ generated in the previous problem to a .csv file.  Using forward selection and AIC, estimate $b$ without having $\mathbb{X}$ stored in memory. Verify that your answer matches (a) 
+```{r}
+write.csv(x=X,file='featureMat.csv')
+p         = ncol(X)
+n         = nrow(X)
+sigmaSq   = NULL#Try sigmaSq = out.biglm$qr$ss/(n-p)
+gicType   = 'AIC'
+outOfCore = FALSE### To do forward selection out of core, will be slow
+
+GICf = function(ind,gicType = 'AIC', sigmaSq = NULL,outOfCore = FALSE){
+  if(outOfCore){
+    grabVec = rep('NULL',p)
+    grabVec[ind] = NA
+    featureMat = read.csv('featureMat.csv', colClasses=grabVec)
+    lm.out = lm(Y~.-1,data=featureMat)
+  }else{
+    lm.out = lm(Y~X[,ind]-1)  
+  }
+  if(gicType == 'AIC'){
+    scaleTerm = 2
+  }else if(gicType == 'BIC'){
+    scaleTerm = log(n)
+  }else{stop('Only supports AIC or BIC')}
+  
+  if(!is.null(sigmaSq)){
+    if(class(sigmaSq) != class(1) | sigmaSq < 0){stop('Invalid variance estimate')}
+    return(sum(lm.out$residuals**2)/n + scaleTerm/n * length(ind)*sigmaSq )  
+  }else{
+    return(n*log(sum(lm.out$residuals**2)/n) + scaleTerm * length(ind) )  
+  }
+}
+
+
+GIC          = Inf#initialize
+indSelect    = c(1)#initialize
+indSet       = 2:p#initialize
+importantVar = 0#initialize
+addedNewVar  = FALSE#initialize
+
+repeat{
+  cat('We have selected thus far: ',indSelect,'\n')
+  countFeatures = 0
+  indSetSweep = 0#this gets the index in indSet of importantVar
+  for(j in indSet){
+    indSetSweep = indSetSweep + 1
+    countFeatures = countFeatures + 1
+    if(countFeatures %% round(length(indSet)/5) == 0){
+      cat('We have looked at the first: ', countFeatures/length(indSet),' fraction of features \n')  
+    }
+    indTmp = c(indSelect,j)
+    GICnew = GICf(indTmp, gicType = gicType, 
+                  sigmaSq = sigmaSq,outOfCore = outOfCore)
+    if(GICnew < GIC){
+      GIC = GICnew
+      importantVar      = j
+      importantVarIndex = indSetSweep
+      addedNewVar       = TRUE
+    }
+    
+  }
+  if(!addedNewVar){
+    break
+  }else{
+    indSet    = indSet[-importantVarIndex]
+    indSelect = c(indSelect,importantVar)
+  }
+  print(GIC)
+  addedNewVar = FALSE
+}
+setdiff(indSelect,leapsModel)
+setdiff(leapsModel,indSelect) 
+```
+
+# Problem 6 (optional)
+On the first set of lecture notes, we covered an example for predicting punctuation given 
+a male user has entered the phrase ``thank you''.  We computed the loss for two different 
+procedures $\hat{f}_1$ and $\hat{f}_2$.  Now, we want to compute the risk, which is the
+expected value of the loss.
+
+As a review, suppose a random variable $Z$ takes a value 1 with probability $\pi$ and 0
+with probability $1-\pi$, where $0 \leq \pi \leq 1$. Then
+\[ 
+\mathbb{E}Z = 1 * \pi + 0 * (1 - \pi) = \pi.
+\]
+
+Compute the following risks.  
+```{r}
+```
+
+### Part a
+\begin{align*}
+R(\hat{f}_1) = \mathbb{E}\ell(\hat{f}_1(X),Y) & = \ldots \\
+& = \ell(``.'',``.'')\mathbb{P}(Y = ``.''|X) + \ell(``.'',``!'')\mathbb{P}(Y = ``!''|X) \\
+& = 0 \cdot 0.43 + 1 \cdot 0.57
+\end{align*}
+```{r}
+```
+### Part b
+\begin{align*}
+R(\hat{f}_2) = \mathbb{E}\ell(\hat{f}_2(X),Y) & = \ldots \\
+& = \ell(``!'',``.'')\mathbb{P}(Y = ``.''|X) + \ell(``!'',``!'')\mathbb{P}(Y = ``!''|X) \\
+& = 1 \cdot 0.43 + 0 \cdot 0.57
+\end{align*}
+
