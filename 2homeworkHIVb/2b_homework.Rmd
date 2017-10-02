@@ -1,0 +1,159 @@
+---
+title: "Homework 2b"
+subtitle: 'STAT6306; Due: 10/03/2017 before class'
+output: pdf_document
+---
+
+#Introduction
+
+A major issue with antiretroviral drugs is the mutation of the virus' genes.  Because of its high rate of replication ($10^9$ to $10^{10}$ virus per person per day) and error-prone
+polymerase\footnote{An enzyme that `stitches' back together DNA or RNA after replication}, HIV can 
+easily develop mutations that alter susceptibility to antiretroviral drugs.
+The emergence of resistance to one or more antiretroviral drugs is one of the more
+common reasons for therapeutic failure in the treatment of HIV.
+
+In the paper 'Genotypic predictors of human immunodeficiency virus type 1 drug resistance'\footnote{The entire paper is on the website.  Try to see what you can get out of it if you have the time.}, 
+a sample of in vitro\footnote{Latin for `in glass', sometimes known colloquially as a test tube}
+HIV viruses were grown and exposed to a particular antiretroviral therapy.  The susceptibility of the virus to treatment
+and the number of genetic mutations of each virus were recorded.
+
+
+
+
+```{r}
+load("hiv.rda")
+
+X = hiv.train$x
+Y = hiv.train$y
+
+n = nrow(X)
+p = ncol(X)
+
+geneLabels = colnames(X)
+```
+
+Let's revisit this problem with the omitted parts. Use/update the forward selection or ridge code you submitted previously and add the requested lasso results.
+
+# Question 1
+We may have (at least) two goals with a data set such as this: 
+
+* inference: can we find some genes whose mutation seems to be most related to viral susceptibility?
+* prediction: can we make a model that would predict whether this therapy would be efficacious, given a virus 
+with a set of genetic mutations
+
+
+## (a) Inference
+
+### (i) 
+Find the selected model for:
+
+* forward selection using BIC as the criterion
+* lasso
+* refitted/relaxed lasso
+
+```{r}
+#Forward selection
+#SOLUTION
+if(!require(leaps)){install.packages('leaps',repos='http://cran.us.r-project.org');require(leaps)}
+outForward      = regsubsets(x=X,y=Y,nvmax=p,method='forward')
+#  note this warning is that the feature matrix
+#  isn't full rank.  This is, there are redundant
+#  columns in it:
+cat('The rank is: ',qr(X)$rank,' while the # of features is: ',p,'\n')
+
+sumForward      = summary(outForward)
+model.forward   = sumForward$which[which.min(sumForward$bic),]
+S.forward       = model.forward[-1]#get rid of the intercept entry
+lm.forward      = lm(Y~X[,S.forward])#regsubsets only scores models, not fit them
+betaHat.forward = coef(lm.forward)
+```
+
+```{r}
+#lasso
+if(!require(glmnet)){install.packages('glmnet',repos='http://cran.us.r-project.org');require(glmnet)}
+#SOLUTION
+```
+
+```{r}
+#refitted/relaxed lasso
+#SOLUTION
+```
+
+### (ii) 
+Comparing the selected models for each of the above methods
+
+```{r}
+#SOLUTION
+geneLabels[S.forward]
+```
+
+## (b) Prediction
+
+###(i) Ridge regression
+Now that are looking at prediction, we can use ridge regression (which only addresses prediction):
+
+
+```{r}
+ridge.cv.glmnet = cv.glmnet(X,Y,alpha=0)
+plot(ridge.cv.glmnet)
+
+min.lambda      = min(ridge.cv.glmnet$lambda)
+lambda.new      = seq(min.lambda, min.lambda*0.01,length=100)
+ridge.cv.glmnet = cv.glmnet(x = X, y = Y, alpha = 0,lambda = lambda.new)
+plot(ridge.cv.glmnet) #now it is in middle
+```
+
+### (ii) Prediction on a test set
+Now, let's look at some predictions made by these methods.  Use the following for the test set:
+```{r}
+X_0 = hiv.test$x
+Y_0 = hiv.test$y
+```
+
+Find an estimate of the risk using the test observations for
+
+* forward selection using BIC as the criterion
+* ridge
+* lasso
+* refitted/relaxed lasso
+```{r}
+#### Get predictions on test set:
+Yhat.test.forward  = X_0[,S.forward] %*% betaHat.forward[-1] + betaHat.forward[1]
+Yhat.test.ridge    = predict(ridge.cv.glmnet,X_0,s='lambda.min')
+#SOLUTION
+
+# Get estimate of prediction risk via the test set error
+Yhat.test.forward   = mean((Yhat.test.forward - Y_0)**2)
+pred.error.ridge    = mean((Yhat.test.ridge - Y_0)**2)
+#SOLUTION
+
+cat('The prediction error from forward selection + BIC is: \n',
+     Yhat.test.forward,'\n')
+
+cat('The prediction error from ridge is: \n',
+     pred.error.ridge,'\n')
+
+```
+SOLUTION: WHICH ONE HAS THE MINIMUM ESTIMATE RISK USING THE TEST ERROR?
+
+#Question 2
+Using the lasso with CV minimum tuning parameter, which gene mutations are related to susceptibility? 
+```{r}
+#SOLUTION
+```
+
+#Question 3
+At which gene mutation sites are the presence of a mutation associated with a decrease in viral susceptibility to this particular drug? Hint: Consider the signs of the coefficients. What gene site has the largest estimated effect using $\hat\beta_{\textrm{lasso}}(\hat\lambda)$?
+```{r}
+#SOLUTION
+
+```
+
+
+#Question 4
+Save the HIV feature matrix to your hard drive in the 3-vector format.  Read
+it back into R's memory and verify that you saved/loaded it correctly
+```{r}
+#SOLUTION
+```
+
