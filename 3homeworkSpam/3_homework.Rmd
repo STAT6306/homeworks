@@ -76,10 +76,10 @@ write.csv(Y_0,file='Ytest.csv',row.names = FALSE)
 
 #Get ride of objects from R's memory as you will be reloading them
 #from the database you will be creating
-rm(X);rm(X_0)
+rm(X);rm(X_0);rm(Y);rm(Y_0)
 
 
-if(!require('sqldf')){install.packages('sqldf'); require('sqldf')}
+if(!require('sqldf')){install.packages('sqldf', repos = 'http://cran.us.r-project.org'); require('sqldf')}
 
 db = dbConnect(SQLite(), dbname='spam.sqlite')
 
@@ -87,8 +87,11 @@ X = read.csv(file='Xtrain.csv')
 dbWriteTable(conn = db, name = 'Xtrain', 
              value = X, row.names = FALSE,
              col.names = TRUE,overwrite=TRUE)
+rm(X)
 #print out first few rows/columns
 dbReadTable(db,'Xtrain')[1:5,1:5]
+
+X              = dbReadTable(db,'Xtrain')
 ###CONTINUE ON FROM HERE...
 ```
 
