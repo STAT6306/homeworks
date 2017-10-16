@@ -170,7 +170,7 @@ and what seems to be the relationship between the levels of the supervisor?
 #Question 6: Trees
 Run the following code
 ```{r}
-require(tree)
+if(!require('tree')){install.packages('sqldf', repos = 'http://cran.us.r-project.org'); require('tree')}
 out.tree = tree(Y~.,data=X)
 tmp.tree = prune.tree(out.tree,best=3)
 plot(tmp.tree)
