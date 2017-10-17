@@ -8,3 +8,5 @@ were pushed to HW 2b.  There are two sets of solutions to HW 2 posted:
 
 It would be in your best interest to try and answer HW 2b without looking at 2_solutionNoLasso.  But, it is 
 there if you feel like you need it.
+
+Homework 3: I updated the SQL code in the Rmd file
