@@ -140,7 +140,7 @@ plot(lasso.cv.glmnet)
 # Get the coefficient estimate, call it betaHat.lasso
 betaHat.lasso   = coef(lasso.cv.glmnet,s='lambda.min')[-1]
 # Get the selected model, call it S.lasso
-S.lasso         = which(abs(betaHat.lasso) > 1e-16)
+(S.lasso         = which(abs(betaHat.lasso) > 1e-16))
 
 if(!require('wordcloud')){install.packages('wordcloud', repos = 'http://cran.us.r-project.org'); require('wordcloud')}
 negPos = betaHat.lasso[S.lasso] < 0
@@ -221,12 +221,21 @@ Make the corresponding partition view for this dendrogram
 #SOLUTION
 punc_dollar = X$punc_dollar
 remove      = X$remove
+offSet      = 1
+
+logPunc_dollar = log(punc_dollar + offSet)
+logRemove      = log(remove + offSet)
+
+removeSplit         = 0.055
+logRemoveSplit      = log(removeSplit + offSet) 
+punc_dollarSplit    = 0.0555
+logPunc_dollarSplit = log(punc_dollarSplit + offSet)
 
 color =rep('blue',nrow(X))
-color[log(remove) < log(0.055) & log(punc_dollar) < log(0.0555)] = 'orange'
-plot(log(remove),log(punc_dollar),xlab='log(remove)',ylab='log(punc_dollar)',cex=.4,col=color)
-abline(h = log(0.0555))#punc_dollar
-segments(x0 = log(0.055), y0 = -10, y1 = log(0.0555))#remove
+color[logRemove < logRemoveSplit & logPunc_dollar < logPunc_dollarSplit] = 'orange'
+plot(logRemove,logPunc_dollar,xlab='log(remove)',ylab='log(punc_dollar)',cex=.4,col=color)
+abline(h = logPunc_dollarSplit)#punc_dollar
+segments(x0 = logRemoveSplit, y0 = -10, y1 = logPunc_dollarSplit)#remove
 text(x =c(-3.75,1,0),y =c(-4,-4,1), labels=c('R1','R2','R3'))
 ```
 
