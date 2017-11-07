@@ -1,6 +1,6 @@
 ---
 title: "Homework 5"
-subtitle: 'STAT6306: Due Nov. 15 at 12:30 pm'
+subtitle: 'STAT6306: Due Nov. 21 at 12:30 pm'
 output: pdf_document
 ---
 
