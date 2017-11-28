@@ -10,4 +10,4 @@ It would be in your best interest to try and answer HW 2b without looking at 2_s
 there if you feel like you need it.
 
 
-Homework 3: I added additional code about SQL to 3_homeworkd.Rmd
+Homework 3: I added additional code about SQL to 3_homework.Rmd
