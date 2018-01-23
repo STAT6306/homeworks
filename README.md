@@ -9,4 +9,5 @@ R is a standard software interface for computing and graphics and Rstudio is an 
 development environment (IDE) for R.  Install both on your computer.
 
 R: http://lib.stat.cmu.edu/R/CRAN/
+
 Rstudio: https://www.rstudio.com/products/rstudio/#Desktop
