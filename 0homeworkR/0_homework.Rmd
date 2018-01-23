@@ -1,0 +1,74 @@
+---
+title: 'STAT6306: Homework 0'
+subtitle: Introduction to R and Document Preparation
+output:
+  html_document: default
+  pdf_document: default
+---
+
+# Problem 0
+R is a standard software interface for computing and graphics and Rstudio is an integrated
+development environment (IDE) for R.  Install both on your computer.
+
+* R: http://lib.stat.cmu.edu/R/CRAN/
+* Rstudio: https://www.rstudio.com/products/rstudio/#Desktop
+
+Also, see the R ``tip o' the day'' document: TOTD.pdf
+
+# Problem 1
+
+Suppose we have the following matrix:
+
+```{r}
+set.seed(1)
+A = matrix(rnorm(4*3),nrow=4,ncol=3)
+```
+We want to get the column mean for each column of the matrix $A$.  Do this using each of the following techniques:
+
+### Part a
+Hard coding  (that is, write $(A[1,1]+ A[2,1] + ...)/4, ...$  )
+
+```{r}
+#SOLUTION
+```
+
+### Part b
+For loop(s)
+```{r}
+#SOLUTION
+```
+
+### Part c
+The apply (or related) function 
+```{r}
+#SOLUTION
+```
+
+# Problem 2
+
+Many statistical methods can be computed/analyzed using the Singular Value
+Decomposition (SVD)
+
+```{r}
+set.seed(10)
+X = matrix(rnorm(24),nrow=6,ncol=4)
+X[,1] = 1
+```
+
+### Part a.  
+
+What role does X[,1] = 1 play in the above code?
+
+#### Solution
+
+### Part b
+We can always write the unique docomposition: $X = UDV^{\top}$.  We
+can compute it using R:
+
+```{r}
+svd.out = svd(X)
+```
+
+Demonstrate that matrices $U$ and $V$ are orthogonal via matrix multiplication.
+
+#### Solution
