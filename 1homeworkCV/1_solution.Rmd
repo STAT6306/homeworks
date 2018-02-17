@@ -144,7 +144,7 @@ for(k in 1:K){
   CVoutput[k] = mean( (YhatValid-Y[validIndex])**2  )
 }
 cat('CV estimate of the risk: ',mean(CVoutput),'\n')
-cat('Standard error of CV estimate of the risk: ',sd(CVoutput),'\n')
+cat('Standard error of CV estimate of the risk: ',sd(CVoutput)/sqrt(K),'\n')
 ```
 
 What could the standard error of CV estimate be used for?
@@ -154,8 +154,10 @@ The standard error of the CV estimate could be used to quantify uncertainty
 with respect to the risk estimate.  In general, the variability of CV will 
 increase with K.  (see the plot in the next questions for some evidence of that in terms of the standard errors for various K).
 
+Note that in the homework I didn't have the standard deviation divided by sqrt(K).  I was looking to see if anyone would think critically about computing the standard deviation of a set of numbers vs. the standard deviation of their average. Sometimes the denominator is sqrt(K-1) instead.
 
 ## Cross-validation in Parallel
+
 CV runs well in parallel, so let's try that out.  First, let's define a function:
 
 ```{r}
