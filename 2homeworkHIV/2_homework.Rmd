@@ -1,0 +1,182 @@
+---
+title: "Homework 2"
+subtitle: 'STAT6306'
+output: pdf_document
+---
+
+#Installing and loading packages
+```{r}
+packages = c('glmnet','leaps')
+for(package in packages){
+  if(!require(package,character.only=TRUE,quietly=TRUE)){
+    install.packages(package,repos='http://cran.us.r-project.org')
+    require(package,character.only=TRUE,quietly=TRUE)
+  }
+}
+```
+
+#Introduction
+
+A major issue with antiretroviral drugs is the mutation of the virus' genes.  Because of its high rate of replication ($10^9$ to $10^{10}$ virus per person per day) and error-prone
+polymerase\footnote{An enzyme that `stitches' back together DNA or RNA after replication}, HIV can 
+easily develop mutations that alter susceptibility to antiretroviral drugs.
+The emergence of resistance to one or more antiretroviral drugs is one of the more
+common reasons for therapeutic failure in the treatment of HIV.
+
+In the paper 'Genotypic predictors of human immunodeficiency virus type 1 drug resistance'\footnote{The entire paper is on the website.  Try to see what you can get out of it if you have the time.}, 
+a sample of in vitro\footnote{Latin for `in glass', sometimes known colloquially as a test tube}
+HIV viruses were grown and exposed to a particular antiretroviral therapy.  The susceptibility of the virus to treatment
+and the number of genetic mutations of each virus were recorded.
+
+
+#Question 1
+
+```{r}
+load("hiv.rda")
+
+X = hiv.train$x
+Y = hiv.train$y
+
+geneLabels = colnames(X)
+```
+
+
+## (a)  
+What are $n$ and $p$ in this problem?  What are the features in this problem?  What are the observations? What is the supervisor? \textbf{Note:} Attempt to answer this question before moving on to the rest of the questions.
+
+```{r}
+#SOLUTION
+```
+
+### SOLUTION
+
+#Question 2
+Consider the feature matrix $\mathbb{X}$.  It is composed of 0's and 1's, with a 1 indicating a mutation in a particular gene.  Look at the output
+for the following chunk of code.
+```{r}
+table(X)
+```
+What results do you see?  What does this indicate?
+
+## SOLUTION
+
+#Question 3
+The supervisor is the log transformed susceptibility of a virus to the considered treatment, with large values
+indicating the virus is relatively more resistant (that is, not susceptible).  Run
+```{r}
+hist(Y)
+```
+
+What plot did you just create?  What does this indicate?
+
+## SOLUTION
+
+# Question 4
+We may have (at least) two goals with a data set such as this: 
+
+* inference: can we find some genes whose mutation seems to be most related to viral susceptibility?
+* prediction: can we make a model that would predict whether this therapy would be efficacious, given a virus 
+with a set of genetic mutations
+
+## (a) 
+Try to find the best subset solution
+for this problem. Discuss any problems or findings you discover.  In particular, 
+how many possible models are there?  
+
+### SOLUTION
+```{r}
+```
+
+
+## (b) Inference
+
+### (i) 
+Find the selected model for:
+
+* forward selection using BIC as the criterion
+* lasso
+
+```{r}
+#Forward selection
+#SOLUTION
+```
+
+```{r}
+#lasso: Note that you'll want to consider whether to standardize the feature matrix..
+#SOLUTION
+```
+
+### (ii) 
+Compare the selected models for each of the above methods.  Which genes are selected by all the methods?
+
+```{r}
+#SOLUTION
+```
+
+### (iii)
+At the genes selected by the lasso, which gene mutation sites are associated with a decrease in viral susceptibility to this particular drug? Hint: Consider the signs of the coefficients. What gene site has the largest estimated effect (positive or negative)?
+```{r}
+#SOLUTION
+```
+
+
+## (c) Prediction
+
+###(i) Ridge regression
+Now that are looking at prediction, we can use ridge regression (which only addresses prediction).  Using the package glmnet, plot the
+CV curve over the grid of $\lambda$ values and indicate the minimum, and finally report the CV
+estimate of the prediction risk for $\hat\beta_{\textrm{ridge},\hat\lambda}$
+
+\textbf{Note:}  There is no need to report the $p$ coefficient estimates from the ridge solution.
+Also, glmnet has a grid problem.  Make two plots, one that shows the problem and one that shows it being corrected.  
+
+```{r}
+#SOLUTION
+```
+
+### (ii) Prediction on a test set
+Now, let's look at some predictions made by these methods.  Use the following for the test set:
+```{r}
+X_0 = hiv.test$x
+Y_0 = hiv.test$y
+```
+
+Find an estimate of the risk using the test observations for
+
+* forward selection using Cp as the criterion
+* ridge
+* lasso
+
+```{r}
+#SOLUTION
+
+```
+
+### (d)
+\textbf{Challenge} Suppose we didn't have access to any test data.  How could you provide a reasonable estimate
+of the risk for each of the 3 procedures?  What are the pros and cons of your proposal?
+```{r}
+#SOLUTION
+```
+
+# Question 5
+
+Building on the gradient descent code from lecture, implement (batch or stochastic) gradient descent to 
+find the ridge regression solution (via the Lagrangian formulation) for the HIV data at lambda = 1.  Compare your solution to the solution found by using the svd and verify that they are (approximately) equal.
+
+Note that the form for the gradients we derived in class need to be augmented by the derivative of the penalty term.
+
+
+# Additional challenge problems:
+
+I don't want to overwhelm you with homework problems.  However, there are additional topics that are relevant for an interested student.  You don't need
+to do these/turn them in.
+
+## LARS vs. forward selection
+The LARS algorithm is quite similar to forward selection.  Run LARS using the option forward.stagewise and compare it to forward selection using Mallow's Cp.
+
+##GIC-based tuning parameter selection
+Try and use a GIC-based method instead of K-fold CV for finding $\hat\lambda$ for the lasso using the HIV data.
+
+
+
