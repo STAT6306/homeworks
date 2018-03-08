@@ -1,0 +1,342 @@
+---
+title: "Solution 2"
+subtitle: 'STAT6306'
+output: pdf_document
+---
+
+#Introduction
+
+A major issue with antiretroviral drugs is the mutation of the virus' genes.  Because of its high rate of replication ($10^9$ to $10^{10}$ virus per person per day) and error-prone
+polymerase\footnote{An enzyme that `stitches' back together DNA or RNA after replication}, HIV can 
+easily develop mutations that alter susceptibility to antiretroviral drugs.
+The emergence of resistance to one or more antiretroviral drugs is one of the more
+common reasons for therapeutic failure in the treatment of HIV.
+
+In the paper 'Genotypic predictors of human immunodeficiency virus type 1 drug resistance'\footnote{The entire paper is on the website.  Try to see what you can get out of it if you have the time.}, 
+a sample of in vitro\footnote{Latin for `in glass', sometimes known colloquially as a test tube}
+HIV viruses were grown and exposed to a particular antiretroviral therapy.  The susceptibility of the virus to treatment
+and the number of genetic mutations of each virus were recorded.
+
+
+#Question 1
+
+```{r}
+load("hiv.rda")
+
+X = hiv.train$x
+Y = hiv.train$y
+
+geneLabels = colnames(X)
+```
+
+
+## (a)  
+What are $n$ and $p$ in this problem?  What are the features in this problem?  What are the observations? What is the supervisor? \textbf{Note:} Attempt to answer this question before moving on to the rest of the questions.
+
+```{r}
+#SOLUTION
+(n = nrow(X))
+(p = ncol(X))
+```
+
+### SOLUTION
+There are 208 features (p) and 704 observations (n). The features are indicators for whether or not there was a mutation in a gene.  The supervisor is the log(susceptibility) of the HIV virus to a particular drug therapy
+
+#Question 2
+Consider the feature matrix $\mathbb{X}$.  It is composed of 0's and 1's, with a 1 indicating a mutation in a particular gene.  Look at the output
+for the following chunk of code.
+```{r}
+table(X)
+```
+What results do you see?  What does this indicate?
+
+## SOLUTION
+Based on the feature matrix X, we see that there are 135589 unmutated/"normal" genes and 10843 genes that have mutations.
+
+#Question 3
+The supervisor is the log transformed susceptibility of a virus to the considered treatment, with large values
+indicating the virus is relatively more resistant (that is, not susceptible).  Run
+```{r}
+hist(Y)
+```
+
+What plot did you just create?  What does this indicate?
+
+## SOLUTION
+This gives us a histogram of the frequency of the susceptibility of a virus to the considered treatment.  The marginal distribution of the supervisor
+Y is bimodal, with a peak around 0 (higher susceptible) and around 2.4 (lower susceptible)
+
+#Question 4
+We may have (at least) two goals with a data set such as this: 
+
+* inference: can we find some genes whose mutation seems to be most related to viral susceptibility?
+* prediction: can we make a model that would predict whether this therapy would be efficacious, given a virus 
+with a set of genetic mutations
+
+## (a) 
+Try to find the best subset solution
+for this problem. Discuss any problems or findings you discover.  In particular, 
+how many possible models are there?  
+
+### SOLUTION
+```{r}
+2^p
+```
+
+There are $2^p$ possible different solutions, which, given the size of p (208), gives us 4.1137614e+62 possible solutions, which is way too large to compute all subsets.
+
+## (b) Inference
+
+### (i) 
+Find the selected model for:
+
+* forward selection using BIC as the criterion
+* lasso
+* refitted/relaxed lasso (note: I added this in, it wasn't in original HW)
+
+```{r}
+#Forward selection
+#SOLUTION
+if(!require(leaps)){install.packages('leaps',repos='http://cran.us.r-project.org');require(leaps)}
+outForward      = regsubsets(x=X,y=Y,nvmax=p,method='forward')
+#  note this warning is that the feature matrix
+#  isn't full rank.  This is, there are redundant
+#  columns in it:
+cat('The rank is: ',qr(X)$rank,' while the # of features is: ',p,'\n')
+
+sumForward      = summary(outForward)
+model.forward   = sumForward$which[which.min(sumForward$bic),]
+S.forward       = model.forward[-1]#get rid of the intercept entry
+lm.forward      = lm(Y~X[,S.forward])#regsubsets only scores models, not fit them
+betaHat.forward = coef(lm.forward)
+betaHat.forward
+```
+
+```{r}
+#lasso
+if(!require(glmnet)){install.packages('glmnet',repos='http://cran.us.r-project.org');require(glmnet)}
+#SOLUTION
+lasso.cv.glmnet = cv.glmnet(X,Y,alpha=1)#note: we are standardizing the features...
+plot(lasso.cv.glmnet) #note that this output is random... why?
+betaHat.lasso   = coef(lasso.cv.glmnet,s='lambda.min')[-1]
+S.lasso         = which(abs(betaHat.lasso) > 1e-16)
+```
+
+```{r}
+#refitted lasso
+#SOLUTION
+lasso.cv.glmnet  = cv.glmnet(X,Y,alpha=1)
+plot(lasso.cv.glmnet)
+betaHat.temp     = coef(lasso.cv.glmnet,s='lambda.1se')[-1]
+S.refitted       = which(abs(betaHat.temp) > 1e-16)
+lm.refitted      = lm(Y ~ X[,S.refitted])
+betaHat.refitted = coef(lm.refitted)
+```
+
+### (ii) 
+Compare the selected models for each of the above methods.  Which genes are selected by all the methods?
+
+```{r}
+#SOLUTION
+cat('The selected genes from forward selection + BIC are: \n',
+     geneLabels[S.forward],'\n')
+
+cat('The selected genes from lasso are: \n',
+     geneLabels[S.lasso],'\n')
+
+cat('The selected genes from refitted lasso are: \n',
+     geneLabels[S.refitted],'\n')
+
+#Note that we can directly compare chosen models
+geneLabels[S.forward]  %in% geneLabels[S.lasso]
+geneLabels[S.lasso] %in% geneLabels[S.forward]
+# and find which is in both:
+intersect(geneLabels[S.lasso], geneLabels[S.forward])
+
+```
+
+### (iii)
+At the genes selected by the lasso, which gene mutation sites are associated with a decrease in viral susceptibility to this particular drug? Hint: Consider the signs of the coefficients. What gene site has the largest estimated effect (positive or negative)?
+```{r}
+#SOLUTION
+## Gene mutation sites related to a decrease in viral susceptibility:
+##  thought process: Y increase <-> decrease susceptibility (i.e. increase resistance)
+##                  so \hat{beta}_j > 0 associated with decrease in susceptibility
+
+geneLabels[betaHat.lasso > 1e-16]
+geneLabels[which.max(abs(betaHat.lasso))]
+```
+
+## (c) Prediction
+
+###(i) Ridge regression
+Now that are looking at prediction, we can use ridge regression (which only addresses prediction).  Using the package glmnet, plot the
+CV curve over the grid of $\lambda$ values and indicate the minimum, and finally report the CV
+estimate of the prediction risk for $\hat\beta_{\textrm{ridge}}(\hat\lambda)$
+
+\textbf{Note:}  There is no need to report the $p$ coefficient estimates from the ridge solution.
+Also, glmnet has a grid problem.  Make two plots, one that shows the problem and one that shows it being corrected.  
+
+```{r}
+#SOLUTION
+ridge.cv.glmnet = cv.glmnet(X,Y,alpha=0)
+plot(ridge.cv.glmnet)
+#or
+plot(ridge.cv.glmnet$lambda,ridge.cv.glmnet$cvm,type='l')
+#CV estimate of the prediction error: 
+min(ridge.cv.glmnet$cvm)
+
+min.lambda      = min(ridge.cv.glmnet$lambda)
+lambda.new      = seq(min.lambda, min.lambda*0.01,length=100)
+ridge.cv.glmnet = cv.glmnet(x = X, y = Y, alpha = 0,lambda = lambda.new)
+plot(ridge.cv.glmnet) #now it is in middle
+
+```
+
+### (ii) Prediction on a test set
+Now, let's look at some predictions made by these methods.  Use the following for the test set:
+```{r}
+X_0 = hiv.test$x
+Y_0 = hiv.test$y
+```
+
+Find an estimate of the risk using the test observations for
+
+* forward selection using Cp as the criterion
+* ridge
+* lasso
+* refitted lasso (note this wasn't in the original hw)
+```{r}
+#SOLUTION
+#### Get predictions on test set:
+Yhat.test.forward  = X_0[,S.forward] %*% betaHat.forward[-1] + betaHat.forward[1]
+Yhat.test.ridge    = predict(ridge.cv.glmnet,X_0,s='lambda.min')
+Yhat.test.lasso    = predict(lasso.cv.glmnet,X_0,s='lambda.min')
+Yhat.test.refitted = X_0[,S.refitted] %*% betaHat.refitted[-1] + betaHat.refitted[1]
+
+# Get estimate of prediction risk via the test set error
+Yhat.test.forward   = mean((Yhat.test.forward - Y_0)**2)
+pred.error.ridge    = mean((Yhat.test.ridge - Y_0)**2)
+pred.error.lasso    = mean((Yhat.test.lasso - Y_0)**2)
+pred.error.refitted = mean((Yhat.test.refitted - Y_0)**2)
+
+cat('The prediction error from forward selection + BIC are: \n',
+     Yhat.test.forward,'\n')
+
+cat('The prediction error from ridge is: \n',
+     pred.error.ridge,'\n')
+
+cat('The prediction error from lasso is: \n',
+     pred.error.lasso,'\n')
+
+cat('The prediction error from refitted lasso is: \n',
+     pred.error.refitted,'\n')
+```
+
+### (d)
+\textbf{Challenge} Suppose we didn't have access to any test data.  How could you provide an estimate
+of the risk?  What are the pros and cons of your proposal?
+```{r}
+#SOLUTION
+cat('The CV estimate of risk of ridge(lambdaHat) = ',min(ridge.cv.glmnet$cvm),'\n')
+```
+Compare this with the test set estimate: 
+```{r}
+cat('The test set estimate of risk from ridge is: \n',
+     pred.error.ridge,'\n')
+```
+So, by minimizing CV as a function of lambda, we have produced a reasonable estimate of the risk.
+
+# Question 5
+
+Building on the gradient descent code from lecture, implement (batch or stochastic) gradient descent to 
+find the ridge regression solution (via the Lagrangian formulation) for the HIV data at lambda = 1.  Compare your solution to the solution found by using the svd and verify that they are (approximately) equal.
+
+Note that the form for the gradients we derived in class need to be augmented by the derivative of the penalty term.
+
+```{r}
+##############################
+##############################
+##############################
+lam = 1
+
+bHatInitial   = rnorm(p)
+bHat          = bHatInitial
+learnRate     = .1
+
+miniBatchParm = n/10
+threshold     = .05/2
+
+fF = function(X,b){
+  return( X %*% b)
+}
+ellF = function(Y,f){
+  return((Y - f)**2)
+}
+rF = function(ell){
+  return( mean( ell ))
+}
+ 
+maxSweep  = 100
+sweep     = 0
+bHatSweep = matrix(0,nrow=maxSweep,ncol=p)
+grad_j    = rep(2*threshold,p)
+
+while(sqrt(sum(grad_j**2)) > threshold & sweep < maxSweep){
+  sweep = sweep + 1
+  batch = sample(1:n,miniBatchParm,replace=FALSE)
+  #Step 1b: Iterate from 1 up to p
+  for(j in 1:p){
+    #Step 2a:Forward
+    f   = fF(X[batch,],bHat)
+    ell = ellF(Y[batch],f)
+    r   = rF(ell)
+    #Step 2b:Backward
+    dell_df = -2*(Y[batch] - f)
+    df_dbj  = X[batch,j]
+    dR_dbj   = rF( dell_df*df_dbj ) + 2*lam*bHat[j]
+    #Step 3: Update
+    bHat[j]  = bHat[j] - learnRate * dR_dbj
+    grad_j[j] = dR_dbj
+  }
+  bHatSweep[sweep,] = bHat
+}
+cat('total number or sweeps: ',sweep,'. Max number of sweeps is: ',maxSweep,'\n')
+```
+
+Let's compare the solutions:
+
+```{r}
+library(glmnet)
+ridge.glmnet = glmnet(x=X,y=Y,alpha=0,
+                   standardize=FALSE,intercept=FALSE,
+                   lambda = seq(lam*1.01,lam*.99,length.out = 1000))
+
+rbind(coef(ridge.glmnet,s=lam)[-1][1:10],bHat[1:10])
+```
+
+At these settings, the solutions are quite close.  Note that in the above implementations, both lambda sequences are implicitly divided by n as we are using the training error as the objective (instead of the RSS).  If we want to compare to an RSS based solution (e.g. the SVD solution in the lecture notes) we would need to multiply the lambda by n.  Here is what I mean by this:
+```{r}
+svd.out = svd(X)
+ridge.svd1 = svd.out$v %*%diag(svd.out$d/(svd.out$d**2 + lam))%*%t(svd.out$u) %*% Y
+
+ridge.svd2 = svd.out$v %*%diag(svd.out$d/(svd.out$d**2 + lam*n))%*%t(svd.out$u) %*% Y
+
+rbind(coef(ridge.glmnet,s=lam)[-1][1:10],bHat[1:10],ridge.svd1[1:10],ridge.svd2[1:10])
+```
+
+
+
+# Additional challenge problems:
+
+I don't want to overwhelm you with homework problems.  However, there are additional topics that are relevant for an interested student.  You don't need
+to do these/turn them in.
+
+## LARS vs. forward selection
+The LARS algorithm is quite similar to forward selection.  Run LARS using the option forward.stagewise and compare it to forward selection using Mallow's Cp.
+
+##GIC-based tuning parameter selection
+Try and use a GIC-based method instead of K-fold CV for finding $\hat\lambda$ for the lasso using the HIV data.
+
+
+
